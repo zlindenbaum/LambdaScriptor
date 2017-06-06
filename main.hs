@@ -1,6 +1,8 @@
 import qualified Data.Map as M
 import Text.Printf
 import qualified Data.List as L
+import System.Exit
+import qualified System.Process
 
 -- misc
 
@@ -20,7 +22,7 @@ data Room = Room
   , roomDesc  :: String
   , roomPaths :: M.Map String ID
   , roomItems :: [Item]
-  } deriving (Show, Eq, Ord)
+  } deriving (Show, Eq, Ord )
 
 data Item = Item
   { itemNames   :: [String]
@@ -56,6 +58,20 @@ move player pathName = let testIndex = ((M.lookup pathName) . roomPaths . curren
                            Just room -> Player room (currentItems player)
                            Nothing -> player
 
+gameLoop :: Player -> IO ()
+gameLoop player = do
+  System.Process.system "clear"
+  printCurrentRoom player
+  putStrLn "\nEnter command: "
+  command <- getLine
+  case command of
+    "quit" -> exitSuccess
+    _ -> gameLoop (move player command)
+
+
 --TEST
 
-p = Player (rooms!!0) []
+main :: IO ()
+main = do
+  let p = Player (rooms!!0) []
+  gameLoop p
