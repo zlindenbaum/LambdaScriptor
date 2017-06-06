@@ -28,10 +28,12 @@ data Item = Item
   , itemCanTake :: Bool
   } deriving (Show, Eq, Ord)
 
-data GameState = GameState
+data Player = Player
   { currentRoom  :: Room
   , currentItems :: [Item]
   } deriving Show
+
+-- TODO: actually make GameState structure
 
 -- TODO: make this eventually parse JSON, and eventually use parsec to create custom syntax
 rooms = [
@@ -39,22 +41,21 @@ rooms = [
   Room "room 2" "the second room" (M.fromList [("south", 0)]) [],
   Room "room 3" "the third room" (M.fromList [("north", 0)]) []]
 
-printCurrentRoom :: GameState -> IO ()
-printCurrentRoom state = let room     = currentRoom state
-                             pathText = ((L.intercalate ", ") . keys . roomPaths) room
-                         in putStr $ printf "Room: %s\nDescription: %s\nPaths: %s\n"
-                            (roomName room) (roomDesc room) pathText
+printCurrentRoom :: Player -> IO ()
+printCurrentRoom player = let room     = currentRoom player
+                              pathText = ((L.intercalate ", ") . keys . roomPaths) room
+                          in putStr $ printf "Room: %s\nDescription: %s\nPaths: %s\n"
+                             (roomName room) (roomDesc room) pathText
 
 getRoom :: ID -> Maybe Room
 getRoom id = rooms!?id
 
-move :: GameState -> String -> GameState
-move state pathName = let testIndex = ((M.lookup pathName) . roomPaths . currentRoom) state
+move :: Player -> String -> Player
+move player pathName = let testIndex = ((M.lookup pathName) . roomPaths . currentRoom) player
                       in case testIndex >>= getRoom of
-                           Just room -> GameState room (currentItems state)
-                           Nothing -> state
-
+                           Just room -> Player room (currentItems player)
+                           Nothing -> player
 
 --TEST
 
-gs = GameState (rooms!!0) []
+p = Player (rooms!!0) []
