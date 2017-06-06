@@ -6,6 +6,7 @@ import qualified System.Process
 
 -- misc
 
+type Name = String
 type ID = Int
 
 keys :: M.Map a b -> [a]
@@ -20,8 +21,8 @@ l !? i | abs i >= length l = Nothing
 data Room = Room
   { roomName  :: String
   , roomDesc  :: String
-  , roomPaths :: M.Map String ID
-  , roomItems :: [Item]
+  , roomPaths :: M.Map Name ID
+  , roomItems :: M.Map Name ID
   } deriving (Show, Eq, Ord)
 
 data Item = Item
@@ -45,19 +46,22 @@ data GameState = GameState
 printCurrentRoom :: GameState -> IO ()
 printCurrentRoom state = let room     = (currentRoom . gamePlayer) state
                              pathText = ((L.intercalate ", ") . keys . roomPaths) room
-                         in putStr $ printf "Room: %s\nDescription: %s\nPaths: %s\n"
-                            (roomName room) (roomDesc room) pathText
+                             itemText = ((L.intercalate ", ") . keys . roomItems) room
+                         in putStr $ printf "Room: %s\nDescription: %s\nItems: %s\nPaths: %s\n"
+                            (roomName room) (roomDesc room) itemText pathText
 
 getRoom :: ID -> Maybe Room
 getRoom id = rooms!?id
 
-
 -- TODO: resolve inconsistency of player inputs; should everything or nothing take GameState as input?
 move :: Player -> String -> Player
 move player pathName = let testIndex = ((M.lookup pathName) . roomPaths . currentRoom) player
-                      in case testIndex >>= getRoom of
+                       in case testIndex >>= getRoom of
                            Just room -> Player room (currentItems player)
                            Nothing -> player
+
+-- takeItem :: Player -> String -> Player
+-- takeItem player itemName = 
 
 gameLoop :: GameState -> IO ()
 gameLoop state = do
@@ -73,9 +77,9 @@ gameLoop state = do
 
 -- TODO: make this eventually parse JSON, and eventually use parsec to create custom syntax
 rooms = [
-  Room "room 1" "the first room" (M.fromList [("north", 1), ("south", 2)]) [],
-  Room "room 2" "the second room" (M.fromList [("south", 0)]) [],
-  Room "room 3" "the third room" (M.fromList [("north", 0)]) []]
+  Room "room 1" "the first room" (M.fromList [("north", 1), ("south", 2)]) (M.fromList [("key", 0)]),
+  Room "room 2" "the second room" (M.fromList [("south", 0)]) M.empty,
+  Room "room 3" "the third room" (M.fromList [("north", 0)]) M.empty]
 
 main :: IO ()
 main = do
