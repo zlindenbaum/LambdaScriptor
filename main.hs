@@ -16,26 +16,28 @@ l !? i | abs i >= length l = Nothing
 -- game structure
 
 data Room = Room
-  { roomName        :: String
-  , roomDesc :: String
-  , roomPaths       :: M.Map String ID
+  { roomName  :: String
+  , roomDesc  :: String
+  , roomPaths :: M.Map String ID
+  , roomItems :: [Item]
   } deriving (Show, Eq, Ord)
 
--- data Item = Item
---   { roomName :: String
---   , roomDesc  :: String
---   , canTake :: Bool
---   } deriving (Show, Eq, Ord)
+data Item = Item
+  { itemNames   :: [String]
+  , itemDesc    :: String
+  , itemCanTake :: Bool
+  } deriving (Show, Eq, Ord)
 
 data GameState = GameState
-  { currentRoom :: Room
+  { currentRoom  :: Room
+  , currentItems :: [Item]
   } deriving Show
 
 -- TODO: make this eventually parse JSON, and eventually use parsec to create custom syntax
 rooms = [
-  Room "room 1" "the first room" (M.fromList [("north", 1), ("south", 2)]),
-  Room "room 2" "the second room" (M.fromList [("south", 0)]),
-  Room "room 3" "the third room" (M.fromList [("north", 0)])]
+  Room "room 1" "the first room" (M.fromList [("north", 1), ("south", 2)]) [],
+  Room "room 2" "the second room" (M.fromList [("south", 0)]) [],
+  Room "room 3" "the third room" (M.fromList [("north", 0)]) []]
 
 printCurrentRoom :: GameState -> IO ()
 printCurrentRoom state = let room     = currentRoom state
@@ -49,10 +51,10 @@ getRoom id = rooms!?id
 move :: GameState -> String -> GameState
 move state pathName = let testIndex = ((M.lookup pathName) . roomPaths . currentRoom) state
                       in case testIndex >>= getRoom of
-                           Just room -> GameState room
+                           Just room -> GameState room (currentItems state)
                            Nothing -> state
 
 
 --TEST
 
-gs = GameState (rooms!!0)
+gs = GameState (rooms!!0) []
