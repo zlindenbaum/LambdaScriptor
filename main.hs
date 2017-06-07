@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 import qualified Data.Map as M
 import Text.Printf
 import qualified Data.List as L
@@ -64,6 +65,9 @@ getItem :: ID -> Maybe Item
 getItem id = items!?id
 
 -- TODO: resolve inconsistency of player inputs; should everything or nothing take GameState as input?
+-- SOLUTION: make everthing take and return GameState (maybe with intermediate function to get locals);
+-- this makes it easier for it to be called in the main gameLoop (we don't need to initialize a new
+-- GameState every recursive cycle, because the action does it for us already)
 move :: Player -> String -> Player
 move player pathName = let testIndex = ((M.lookup pathName) . roomPaths . currentRoom) player
                        in case testIndex >>= getRoom of
@@ -80,8 +84,8 @@ takeItem state itemName = let player     = gamePlayer state
                               testIndex  = ((M.lookup itemName) . roomItems) cRoom
                               succRoom   = Room (roomName cRoom) (roomDesc cRoom) (roomPaths cRoom) (M.delete itemName rItems)
                               succPlayer = Player cRoom $ M.insert itemName (fromJust testIndex) cItems
-                          in case testIndex >>= getItem of
-                               Just item -> GameState succPlayer (lReplace (gameRooms state) roomIndex succRoom) (gameItems state)
+                          in case testIndex of
+                               Just index -> GameState succPlayer (lReplace (gameRooms state) roomIndex succRoom) (gameItems state)
                                Nothing -> state
 
 
@@ -91,9 +95,11 @@ gameLoop state = do
   printCurrentRoom state
   putStrLn "\nEnter command:"
   command <- getLine
+  -- TODO: fix the take item problem; it's somewhere around here
   case command of
     "quit" -> exitSuccess
-    _      -> gameLoop $ GameState (move (gamePlayer state) command) (gameRooms state) (gameItems state)
+    c      | take 5 c == "take " -> gameLoop $ takeItem state (drop 5 c)
+           | otherwise           -> gameLoop $ GameState (move (gamePlayer state) c) (gameRooms state) (gameItems state)
 
 --TEST
 
